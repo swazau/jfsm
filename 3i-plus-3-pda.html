@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDA for L = {a^i b^k : i, k > 0 and k = 3i + 3}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .node {
+            fill: #fff;
+            stroke: #3498db;
+            stroke-width: 2px;
+        }
+        .node.active {
+            fill: #3498db;
+            stroke: #2980b9;
+            stroke-width: 3px;
+        }
+        .node.initial {
+            fill: #f0f8ff;
+        }
+        .node.accepted {
+            fill: #e0ffe0;
+            stroke: #27ae60;
+        }
+        .node.rejected {
+            fill: #ffe0e0;
+            stroke: #e74c3c;
+        }
+        .node text {
+            font-size: 14px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            alignment-baseline: middle;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        .node.active text {
+            fill: white;
+        }
+        .link {
+            fill: none;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+        .link.active {
+            stroke: #e74c3c;
+            stroke-width: 3px;
+        }
+        .link-label {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .link-label-bg {
+            fill: white;
+            rx: 5;
+            ry: 5;
+            opacity: 0.9;
+            stroke: #ddd;
+            stroke-width: 1;
+        }
+        #automaton {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .description {
+            margin-top: 20px;
+            max-width: 700px;
+            line-height: 1.6;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+            font-size: 14px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .step-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #3498db;
+            margin-bottom: 15px;
+        }
+        .simulation-display {
+            display: flex;
+            margin-top: 10px;
+        }
+        .stack-display {
+            width: 100px;
+            min-height: 200px;
+            border: 2px solid #3498db;
+            margin-right: 20px;
+            border-radius: 5px;
+            background-color: #f7f9fc;
+            padding-top: 10px;
+            position: relative;
+        }
+        .stack-display::before {
+            content: "Stack";
+            position: absolute;
+            top: -15px;
+            left: 5px;
+            background-color: white;
+            padding: 0 5px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .stack-item {
+            text-align: center;
+            padding: 8px;
+            margin: 5px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .input-tape {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tape-cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            background-color: white;
+        }
+        .tape-cell.current {
+            border-color: #e74c3c;
+            border-width: 2px;
+            background-color: #ffecec;
+        }
+        .tape-cell.processed {
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+        }
+        .result {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .result.accepted {
+            color: #27ae60;
+        }
+        .result.rejected {
+            color: #e74c3c;
+        }
+        .language-examples {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .language-examples ul {
+            margin-top: 10px;
+            padding-left: 25px;
+        }
+        .language-examples li {
+            margin-bottom: 5px;
+        }
+        .legend {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .legend-item {
+            margin-bottom: 5px;
+        }
+        .legend-symbol {
+            font-style: italic;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDA for L = {a<sup>i</sup> b<sup>k</sup> : i, k > 0 and k = 3i + 3}</h1>
+        
+        <div class="description">
+            <p>This Push-Down Automaton (PDA) recognizes the language L = {a<sup>i</sup> b<sup>k</sup> : i, k > 0 and k = 3i + 3},
+            which represents strings with i 'a's followed by k 'b's, where k = 3i + 3.</p>
+            <p>For each 'a' read, the automaton pushes three X's onto the stack. When the first 'b' is encountered, 
+            it pushes three more X's (for the +3 part of the formula), then transitions to a state that pops one X for each 'b' read.</p>
+        </div>
+        
+        <div class="language-examples">
+            <p><strong>Examples of strings in the language:</strong></p>
+            <ul>
+                <li>For i=1: "abbbbbb" (1 'a' followed by 6 'b's, since 3×1+3=6)</li>
+                <li>For i=2: "aabbbbbbbbb" (2 'a's followed by 9 'b's, since 3×2+3=9)</li>
+                <li>For i=3: "aaabbbbbbbbbbbb" (3 'a's followed by 12 'b's, since 3×3+3=12)</li>
+            </ul>
+        </div>
+        
+        <div class="controls">
+            <div class="input-group">
+                <label for="input-string">Input String:</label>
+                <input type="text" id="input-string" placeholder="e.g., abbbbbb" value="abbbbbb">
+            </div>
+            <button id="simulate-btn">Simulate</button>
+            <button id="step-btn" disabled>Step</button>
+            <button id="reset-btn" disabled>Reset</button>
+        </div>
+        
+        <div class="step-info" id="step-info" style="display: none;">
+            <div id="current-state"></div>
+            <div id="current-step"></div>
+            
+            <div class="simulation-display">
+                <div class="stack-display" id="stack-display"></div>
+                
+                <div>
+                    <h3>Input Tape:</h3>
+                    <div class="input-tape" id="input-tape"></div>
+                    <div class="result" id="result"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="automaton"></div>
+        
+        <div class="legend">
+            <p>Transition label format: <span class="legend-symbol">input/pop/push</span></p>
+            <div class="legend-item">• <span class="legend-symbol">a</span> - Input symbol 'a'</div>
+            <div class="legend-item">• <span class="legend-symbol">b</span> - Input symbol 'b'</div>
+            <div class="legend-item">• <span class="legend-symbol">X</span> - Stack symbol</div>
+            <div class="legend-item">• <span class="legend-symbol">ε</span> - Empty string (no operation)</div>
+        </div>
+    </div>
+
+    <script>
+        // Define the FSM
+        const fsm = {
+            name: "3iPlus3PDA",
+            model: "uml",
+            states: [
+                { name: "Start", x: 120, y: 180, type: "initial" },
+                { name: "1", x: 300, y: 180, type: "normal" },
+                { name: "2", x: 550, y: 180, type: "normal" },
+                { name: "Accept", x: 550, y: 350, type: "accepted" },
+                { name: "Reject", x: 300, y: 350, type: "rejected" }
+            ],
+            transitions: [
+                { id: "t0", from: "Start", to: "1", label: "a/ε/XXX", trigger: "a", action: "pushThree" },
+                { id: "t1", from: "1", to: "1", label: "a/ε/XXX", trigger: "a", action: "pushThree", selfLoop: true, direction: "top" },
+                { id: "t2", from: "1", to: "2", label: "b/ε/XXX", trigger: "b", action: "pushThreeThenPop", selfLoop: false },
+                { id: "t3", from: "2", to: "2", label: "b/X/ε", trigger: "b", action: "pop", condition: "stackNotEmpty", selfLoop: true, direction: "top" },
+                { id: "t4", from: "2", to: "Accept", label: "ε/ε/ε [Stack = 0]", trigger: null, action: "accept", condition: "stackEmpty" },
+                { id: "t5", from: "2", to: "Reject", label: "a/ε/ε", trigger: "a", action: "reject" }
+            ],
+            initialState: "Start"
+        };
+
+        // Setup the SVG
+        const width = 750;
+        const height = 400;
+        const svg = d3.select("#automaton")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Define node properties
+        const nodeRadius = 40;
+
+        // Create a map to reference nodes by name
+        const nodeMap = {};
+        fsm.states.forEach(state => {
+            nodeMap[state.name] = state;
+        });
+
+        // Create curved paths for transitions
+        function createPath(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop direction
+                const direction = transition.direction || "top";
+                if (direction === "top") {
+                    // Self-loop above the node
+                    return `M ${source.x} ${source.y - nodeRadius} 
+                            C ${source.x - 60} ${source.y - 100},
+                              ${source.x + 60} ${source.y - 100},
+                              ${source.x} ${source.y - nodeRadius}`;
+                } else if (direction === "right") {
+                    // Self-loop to the right of the node
+                    return `M ${source.x + nodeRadius} ${source.y} 
+                            C ${source.x + 100} ${source.y - 60},
+                              ${source.x + 100} ${source.y + 60},
+                              ${source.x + nodeRadius} ${source.y}`;
+                }
+            } else {
+                // For transitions between different states
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const angle = Math.atan2(dy, dx);
+                
+                // Calculate the start and end points on the circle perimeters
+                const startX = source.x + nodeRadius * Math.cos(angle);
+                const startY = source.y + nodeRadius * Math.sin(angle);
+                const endX = target.x - nodeRadius * Math.cos(angle);
+                const endY = target.y - nodeRadius * Math.sin(angle);
+                
+                // For slightly curved paths, using quadratic curves
+                const midX = (startX + endX) / 2;
+                const midY = (startY + endY) / 2;
+                
+                // Perpendicular offset for curve control point
+                const perpX = -dy * 0.15; // Adjust multiplier for curve intensity
+                const perpY = dx * 0.15;  // Adjust multiplier for curve intensity
+                
+                return `M ${startX} ${startY} 
+                        Q ${midX + perpX} ${midY + perpY} 
+                        ${endX} ${endY}`;
+            }
+        }
+
+        // Get position for transition label
+        function getLabelPosition(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop label position
+                const direction = transition.direction || "top";
+                if (direction === "top") {
+                    return { x: source.x, y: source.y - 80 };
+                } else if (direction === "right") {
+                    return { x: source.x + 80, y: source.y };
+                }
+            } else {
+                // Calculate position for label on transitions between different states
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                // Position along the path (0.5 = middle)
+                const t = 0.5;
+                let x = source.x + dx * t;
+                let y = source.y + dy * t;
+                
+                // Add offset perpendicular to the line direction
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI/2;
+                const offsetAmount = 25; // Pixels to offset from the line
+                
+                x += offsetAmount * Math.cos(perpAngle);
+                y += offsetAmount * Math.sin(perpAngle);
+                
+                return { x, y };
+            }
+        }
+
+        // Calculate label background dimensions
+        function getLabelBBox(label, position) {
+            // Estimate text width and height based on characters
+            const padding = 6;
+            const charWidth = 7; // Approximate width per character
+            const width = Math.max(label.length * charWidth, 50) + padding * 2;
+            const height = 18 + padding * 2;
+            
+            return {
+                x: position.x - width/2,
+                y: position.y - height/2,
+                width,
+                height
+            };
+        }
+
+        // Add arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 8)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#333");
+
+        // Draw transitions
+        const links = svg.selectAll(".link")
+            .data(fsm.transitions)
+            .enter()
+            .append("path")
+            .attr("class", d => `link ${d.id}`)
+            .attr("d", d => createPath(nodeMap[d.from], nodeMap[d.to], d))
+            .attr("marker-end", "url(#arrowhead)");
+
+        // Draw transition labels with backgrounds
+        fsm.transitions.forEach(transition => {
+            const source = nodeMap[transition.from];
+            const target = nodeMap[transition.to];
+            const labelPos = getLabelPosition(source, target, transition);
+            const bbox = getLabelBBox(transition.label, labelPos);
+            
+            // Label background
+            svg.append("rect")
+                .attr("class", "link-label-bg")
+                .attr("x", bbox.x)
+                .attr("y", bbox.y)
+                .attr("width", bbox.width)
+                .attr("height", bbox.height);
+            
+            // Label text
+            svg.append("text")
+                .attr("class", "link-label")
+                .attr("x", labelPos.x)
+                .attr("y", labelPos.y)
+                .text(transition.label);
+        });
+
+        // Draw nodes
+        const nodes = svg.selectAll(".node")
+            .data(fsm.states)
+            .enter()
+            .append("g")
+            .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+        nodes.append("circle")
+            .attr("class", d => {
+                let classes = `node ${d.name}`;
+                if (d.name === fsm.initialState || d.type === "initial") classes += " initial";
+                if (d.type === "accepted") classes += " accepted";
+                if (d.type === "rejected") classes += " rejected";
+                return classes;
+            })
+            .attr("r", nodeRadius);
+
+        nodes.append("text")
+            .text(d => d.name)
+            .attr("dy", "0.35em"); // Fine-tune vertical centering
+
+        // Add initial state marker (arrow pointing to initial state)
+        const initialState = nodeMap[fsm.initialState];
+        svg.append("path")
+            .attr("d", `M ${initialState.x - 90} ${initialState.y} L ${initialState.x - nodeRadius - 5} ${initialState.y}`)
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrowhead)")
+            .attr("fill", "none");
+
+        // Simulation logic
+        const simulateBtn = document.getElementById('simulate-btn');
+        const stepBtn = document.getElementById('step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const inputStringEl = document.getElementById('input-string');
+        const stepInfoEl = document.getElementById('step-info');
+        const currentStateEl = document.getElementById('current-state');
+        const currentStepEl = document.getElementById('current-step');
+        const stackDisplayEl = document.getElementById('stack-display');
+        const inputTapeEl = document.getElementById('input-tape');
+        const resultEl = document.getElementById('result');
+
+        let simulationState = {
+            currentState: null,
+            inputString: '',
+            position: 0,
+            stack: [],
+            ended: false,
+            result: null,
+            stepCount: 0
+        };
+
+        function resetSimulation() {
+            // Reset UI elements
+            stepInfoEl.style.display = 'none';
+            resultEl.textContent = '';
+            resultEl.className = 'result';
+            
+            // Reset node and link styling
+            d3.selectAll('.node').classed('active', false);
+            d3.selectAll('.link').classed('active', false);
+            
+            // Reset simulation state
+            simulationState = {
+                currentState: fsm.initialState,
+                inputString: '',
+                position: 0,
+                stack: [],
+                ended: false,
+                result: null,
+                stepCount: 0
+            };
+            
+            // Reset buttons
+            simulateBtn.disabled = false;
+            stepBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+
+        function startSimulation() {
+            const inputString = inputStringEl.value.trim();
+            
+            if (!inputString) {
+                alert('Please enter an input string');
+                return;
+            }
+            
+            // Initialize simulation
+            simulationState = {
+                currentState: fsm.initialState,
+                inputString: inputString,
+                position: 0,
+                stack: [],
+                ended: false,
+                result: null,
+                stepCount: 0
+            };
+            
+            // Enable step button, disable simulate button
+            simulateBtn.disabled = true;
+            stepBtn.disabled = false;
+            resetBtn.disabled = false;
+            
+            // Show step info
+            stepInfoEl.style.display = 'block';
+            
+            // Visualize initial state
+            updateVisualization();
+        }
+
+        function simulateStep() {
+            if (simulationState.ended) {
+                return;
+            }
+            
+            simulationState.stepCount++;
+            
+            // Get current input symbol (or null if at end)
+            const currentSymbol = simulationState.position < simulationState.inputString.length 
+                ? simulationState.inputString[simulationState.position] 
+                : null;
+            
+            // If no more input, check if we can make an epsilon transition
+            if (currentSymbol === null) {
+                const epsilonTransitions = fsm.transitions.filter(t => 
+                    t.from === simulationState.currentState && 
+                    t.trigger === null
+                );
+                
+                if (epsilonTransitions.length > 0) {
+                    // Find epsilon transition that satisfies conditions
+                    let transition = null;
+                    for (const t of epsilonTransitions) {
+                        if (!t.condition) {
+                            transition = t;
+                            break;
+                        } else if (t.condition === 'stackEmpty' && simulationState.stack.length === 0) {
+                            transition = t;
+                            break;
+                        } else if (t.condition === 'stackNotEmpty' && simulationState.stack.length > 0) {
+                            transition = t;
+                            break;
+                        }
+                    }
+                    
+                    if (transition) {
+                        // Execute transition action
+                        executeTransitionAction(transition);
+                        
+                        // Highlight active transition
+                        d3.selectAll('.link').classed('active', false);
+                        d3.select(`.link.${transition.id}`).classed('active', true);
+                        
+                        // Move to next state
+                        simulationState.currentState = transition.to;
+                        
+                        // Update visualization
+                        updateVisualization();
+                        
+                        // If we're done, disable step button
+                        if (simulationState.ended) {
+                            stepBtn.disabled = true;
+                        }
+                        
+                        return;
+                    } else {
+                        // No valid epsilon transition, check if we're in accept state
+                        if (simulationState.currentState === 'Accept') {
+                            simulationState.result = 'accepted';
+                        } else {
+                            simulationState.result = 'rejected';
+                        }
+                        simulationState.ended = true;
+                        updateVisualization();
+                        return;
+                    }
+                } else {
+                    // No epsilon transitions available, reject unless in accept state
+                    if (simulationState.currentState === 'Accept') {
+                        simulationState.result = 'accepted';
+                    } else if (simulationState.currentState === '2' && simulationState.stack.length === 0) {
+                        // If in state 2 with empty stack, transition to accept
+                        simulationState.currentState = 'Accept';
+                        simulationState.result = 'accepted';
+                    } else {
+                        simulationState.result = 'rejected';
+                    }
+                    simulationState.ended = true;
+                    updateVisualization();
+                    return;
+                }
+            }
+            
+            // Find applicable transition
+            const possibleTransitions = fsm.transitions.filter(t => 
+                t.from === simulationState.currentState && 
+                t.trigger === currentSymbol
+            );
+            
+            // If no transitions match, reject
+            if (possibleTransitions.length === 0) {
+                simulationState.result = 'rejected';
+                simulationState.ended = true;
+                updateVisualization();
+                return;
+            }
+            
+            // Find transition that satisfies conditions
+            let transition = null;
+            for (const t of possibleTransitions) {
+                if (!t.condition) {
+                    transition = t;
+                    break;
+                } else if (t.condition === 'stackEmpty' && simulationState.stack.length === 0) {
+                    transition = t;
+                    break;
+                } else if (t.condition === 'stackNotEmpty' && simulationState.stack.length > 0) {
+                    transition = t;
+                    break;
+                }
+            }
+            
+            // If no valid transition, reject
+            if (!transition) {
+                simulationState.result = 'rejected';
+                simulationState.ended = true;
+                updateVisualization();
+                return;
+            }
+            
+            // Execute transition action
+            executeTransitionAction(transition);
+            
+            // Highlight active transition
+            d3.selectAll('.link').classed('active', false);
+            d3.select(`.link.${transition.id}`).classed('active', true);
+            
+            // Move to next state
+            simulationState.currentState = transition.to;
+            
+            // Move to next input symbol
+            simulationState.position++;
+            
+            // Update visualization
+            updateVisualization();
+            
+            // If we're done, disable step button
+            if (simulationState.ended) {
+                stepBtn.disabled = true;
+            }
+        }
+        
+        function executeTransitionAction(transition) {
+            switch (transition.action) {
+                case 'pushThree':
+                    // Push three X's onto the stack
+                    simulationState.stack.push('X');
+                    simulationState.stack.push('X');
+                    simulationState.stack.push('X');
+                    break;
+                case 'pushThreeThenPop':
+                    // Push three X's onto the stack for the +3 part of 3i+3
+                    simulationState.stack.push('X');
+                    simulationState.stack.push('X');
+                    simulationState.stack.push('X');
+                    // Pop one X for the current 'b'
+                    if (simulationState.stack.length > 0) {
+                        simulationState.stack.pop();
+                    }
+                    break;
+                case 'pop':
+                    // Pop one X from the stack
+                    if (simulationState.stack.length > 0) {
+                        simulationState.stack.pop();
+                    }
+                    break;
+                case 'accept':
+                    simulationState.result = 'accepted';
+                    simulationState.ended = true;
+                    break;
+                case 'reject':
+                    simulationState.result = 'rejected';
+                    simulationState.ended = true;
+                    break;
+            }
+        }
+
+        function updateVisualization() {
+            // Update current state display
+            currentStateEl.textContent = `Current State: ${simulationState.currentState}`;
+            
+            // Update step count
+            currentStepEl.textContent = `Step: ${simulationState.stepCount}`;
+            
+            // Update stack display
+            stackDisplayEl.innerHTML = '';
+            simulationState.stack.slice().reverse().forEach(item => {
+                const stackItem = document.createElement('div');
+                stackItem.className = 'stack-item';
+                stackItem.textContent = item;
+                stackDisplayEl.appendChild(stackItem);
+            });
+            
+            // Update input tape
+            inputTapeEl.innerHTML = '';
+            for (let i = 0; i < simulationState.inputString.length; i++) {
+                const tapeCell = document.createElement('div');
+                tapeCell.className = 'tape-cell';
+                if (i === simulationState.position) {
+                    tapeCell.classList.add('current');
+                } else if (i < simulationState.position) {
+                    tapeCell.classList.add('processed');
+                }
+                tapeCell.textContent = simulationState.inputString[i];
+                inputTapeEl.appendChild(tapeCell);
+            }
+            
+            // Update result if simulation has ended
+            if (simulationState.ended && simulationState.result) {
+                resultEl.textContent = simulationState.result === 'accepted' 
+                    ? 'String Accepted!' 
+                    : 'String Rejected!';
+                resultEl.className = `result ${simulationState.result}`;
+            } else {
+                resultEl.textContent = '';
+                resultEl.className = 'result';
+            }
+            
+            // Highlight active state
+            d3.selectAll('.node').classed('active', false);
+            d3.select(`.node.${simulationState.currentState}`).classed('active', true);
+        }
+
+        // Event listeners
+        simulateBtn.addEventListener('click', startSimulation);
+        stepBtn.addEventListener('click', simulateStep);
+        resetBtn.addEventListener('click', resetSimulation);
+
+        // Initialize
+        resetSimulation();
+    </script>
+</body>
+</html>

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Push-Down Automaton for L = {a^i b^k : i, k > 0 and k = 3i + 3}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .node {
+            fill: #fff;
+            stroke: #3498db;
+            stroke-width: 2px;
+        }
+        .node.initial {
+            fill: #f0f8ff;
+        }
+        .node.accepted {
+            fill: #e0ffe0;
+            stroke: #27ae60;
+        }
+        .node.rejected {
+            fill: #ffe0e0;
+            stroke: #e74c3c;
+        }
+        .node-text {
+            font-size: 14px;
+            text-anchor: middle;
+            alignment-baseline: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        .link {
+            fill: none;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+        .link-label {
+            font-size: 12px;
+            text-anchor: middle;
+            alignment-baseline: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .link-label-bg {
+            fill: white;
+            rx: 5;
+            ry: 5;
+            opacity: 0.95;
+            stroke: #ddd;
+            stroke-width: 1;
+        }
+        #automaton {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .description {
+            margin-top: 20px;
+            max-width: 700px;
+            line-height: 1.6;
+        }
+        .language-examples {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .language-examples ul {
+            margin-top: 10px;
+            padding-left: 25px;
+        }
+        .language-examples li {
+            margin-bottom: 5px;
+        }
+        .legend {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .legend-item {
+            margin-bottom: 5px;
+        }
+        .legend-symbol {
+            font-style: italic;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Push-Down Automaton for L = {a<sup>i</sup> b<sup>k</sup> : i, k > 0 and k = 3i + 3}</h1>
+        
+        <div class="description">
+            <p>This Push-Down Automaton (PDA) recognizes the language L = {a<sup>i</sup> b<sup>k</sup> : i, k > 0 and k = 3i + 3},
+            which represents strings with i 'a's followed by k 'b's, where k = 3i + 3.</p>
+            <p>For each 'a' read, the automaton pushes three X's onto the stack. When the first 'b' is encountered, 
+            it pushes three more X's (for the +3 part of the formula), then transitions to a state that pops one X for each 'b' read.</p>
+        </div>
+        
+        <div class="language-examples">
+            <p><strong>Examples of strings in the language:</strong></p>
+            <ul>
+                <li>For i=1: "abbbbbb" (1 'a' followed by 6 'b's, since 3×1+3=6)</li>
+                <li>For i=2: "aabbbbbbbbb" (2 'a's followed by 9 'b's, since 3×2+3=9)</li>
+                <li>For i=3: "aaabbbbbbbbbbbb" (3 'a's followed by 12 'b's, since 3×3+3=12)</li>
+            </ul>
+        </div>
+        
+        <div id="automaton"></div>
+        
+        <div class="legend">
+            <p>Transition label format: <span class="legend-symbol">input/pop/push</span></p>
+            <div class="legend-item">• <span class="legend-symbol">a</span> - Input symbol 'a'</div>
+            <div class="legend-item">• <span class="legend-symbol">b</span> - Input symbol 'b'</div>
+            <div class="legend-item">• <span class="legend-symbol">X</span> - Stack symbol</div>
+            <div class="legend-item">• <span class="legend-symbol">ε</span> - Empty string (no operation)</div>
+        </div>
+    </div>
+
+    <script>
+        // Define the FSM
+        const fsm = {
+            name: "3iPlus3PDA",
+            model: "uml",
+            states: [
+                { name: "Start", x: 120, y: 180, type: "initial" },
+                { name: "1", x: 300, y: 180, type: "normal" },
+                { name: "2", x: 550, y: 180, type: "normal" },
+                { name: "Accept", x: 550, y: 350, type: "accepted" },
+                { name: "Reject", x: 300, y: 350, type: "rejected" }
+            ],
+            transitions: [
+                { id: "t0", from: "Start", to: "1", label: "a/ε/XXX" },
+                { id: "t1", from: "1", to: "1", label: "a/ε/XXX", selfLoop: true, direction: "top" },
+                { id: "t2", from: "1", to: "2", label: "b/ε/XXX" },
+                { id: "t3", from: "2", to: "2", label: "b/X/ε", selfLoop: true, direction: "top" },
+                { id: "t4", from: "2", to: "Accept", label: "ε/ε/ε [Stack = 0]" },
+                { id: "t5", from: "2", to: "Reject", label: "a/ε/ε" }
+            ],
+            initialState: "Start"
+        };
+
+        // Setup the SVG
+        const width = 750;
+        const height = 400;
+        const svg = d3.select("#automaton")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Define node properties
+        const nodeRadius = 40;
+
+        // Create a map to reference nodes by name
+        const nodeMap = {};
+        fsm.states.forEach(state => {
+            nodeMap[state.name] = state;
+        });
+
+        // Create curved paths for transitions
+        function createPath(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop direction
+                const direction = transition.direction || "top";
+                if (direction === "top") {
+                    // Self-loop above the node
+                    return `M ${source.x} ${source.y - nodeRadius} 
+                            C ${source.x - 60} ${source.y - 100},
+                              ${source.x + 60} ${source.y - 100},
+                              ${source.x} ${source.y - nodeRadius}`;
+                } else if (direction === "right") {
+                    // Self-loop to the right of the node
+                    return `M ${source.x + nodeRadius} ${source.y} 
+                            C ${source.x + 100} ${source.y - 60},
+                              ${source.x + 100} ${source.y + 60},
+                              ${source.x + nodeRadius} ${source.y}`;
+                }
+            } else {
+                // For transitions between different states
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const angle = Math.atan2(dy, dx);
+                
+                // Calculate the start and end points on the circle perimeters
+                const startX = source.x + nodeRadius * Math.cos(angle);
+                const startY = source.y + nodeRadius * Math.sin(angle);
+                const endX = target.x - nodeRadius * Math.cos(angle);
+                const endY = target.y - nodeRadius * Math.sin(angle);
+                
+                // For slightly curved paths, using quadratic curves
+                const midX = (startX + endX) / 2;
+                const midY = (startY + endY) / 2;
+                
+                // Perpendicular offset for curve control point
+                const perpX = -dy * 0.15; // Adjust multiplier for curve intensity
+                const perpY = dx * 0.15;  // Adjust multiplier for curve intensity
+                
+                return `M ${startX} ${startY} 
+                        Q ${midX + perpX} ${midY + perpY} 
+                        ${endX} ${endY}`;
+            }
+        }
+
+        // Get position for transition label
+        function getLabelPosition(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop label position
+                const direction = transition.direction || "top";
+                if (direction === "top") {
+                    return { x: source.x, y: source.y - 80 };
+                } else if (direction === "right") {
+                    return { x: source.x + 80, y: source.y };
+                }
+            } else {
+                // Calculate position for label on transitions between different states
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                // Position along the path (0.5 = middle)
+                const t = 0.5;
+                let x = source.x + dx * t;
+                let y = source.y + dy * t;
+                
+                // Add offset perpendicular to the line direction
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI/2;
+                const offsetAmount = 25; // Pixels to offset from the line
+                
+                x += offsetAmount * Math.cos(perpAngle);
+                y += offsetAmount * Math.sin(perpAngle);
+                
+                return { x, y };
+            }
+        }
+
+        // Calculate label background dimensions
+        function getLabelBBox(label, position) {
+            // Estimate text width and height based on characters
+            const padding = 6;
+            const charWidth = 7; // Approximate width per character
+            const width = Math.max(label.length * charWidth, 50) + padding * 2;
+            const height = 18 + padding * 2;
+            
+            return {
+                x: position.x - width/2,
+                y: position.y - height/2,
+                width,
+                height
+            };
+        }
+
+        // Add arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 8)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#333");
+
+        // Draw transitions
+        const links = svg.selectAll(".link")
+            .data(fsm.transitions)
+            .enter()
+            .append("path")
+            .attr("class", d => `link ${d.id}`)
+            .attr("d", d => createPath(nodeMap[d.from], nodeMap[d.to], d))
+            .attr("marker-end", "url(#arrowhead)");
+
+        // Draw transition labels with backgrounds
+        fsm.transitions.forEach(transition => {
+            const source = nodeMap[transition.from];
+            const target = nodeMap[transition.to];
+            const labelPos = getLabelPosition(source, target, transition);
+            const bbox = getLabelBBox(transition.label, labelPos);
+            
+            // Label background
+            svg.append("rect")
+                .attr("class", "link-label-bg")
+                .attr("x", bbox.x)
+                .attr("y", bbox.y)
+                .attr("width", bbox.width)
+                .attr("height", bbox.height);
+            
+            // Label text
+            svg.append("text")
+                .attr("class", "link-label")
+                .attr("x", labelPos.x)
+                .attr("y", labelPos.y)
+                .text(transition.label);
+        });
+
+        // Draw nodes
+        const nodes = svg.selectAll(".node-group")
+            .data(fsm.states)
+            .enter()
+            .append("g")
+            .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+        nodes.append("circle")
+            .attr("class", d => {
+                let classes = "node";
+                if (d.name === fsm.initialState || d.type === "initial") classes += " initial";
+                if (d.type === "accepted") classes += " accepted";
+                if (d.type === "rejected") classes += " rejected";
+                return classes;
+            })
+            .attr("r", nodeRadius);
+
+        // Properly centered text
+        nodes.append("text")
+            .attr("class", "node-text")
+            .attr("dy", "0.35em") // Fine-tune vertical centering
+            .text(d => d.name);
+
+        // Add initial state marker (arrow pointing to initial state)
+        const initialState = nodeMap[fsm.initialState];
+        svg.append("path")
+            .attr("d", `M ${initialState.x - 90} ${initialState.y} L ${initialState.x - nodeRadius - 5} ${initialState.y}`)
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrowhead)")
+            .attr("fill", "none");
+    </script>
+</body>
+</html>
