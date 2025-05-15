@@ -39,7 +39,7 @@
             font-size: 14px;
             text-anchor: middle;
             dominant-baseline: middle;
-            alignment-baseline: middle; /* Added for better vertical centering */
+            alignment-baseline: middle;
             pointer-events: none;
             font-weight: bold;
         }
@@ -252,12 +252,12 @@
                 { name: "Rejected", x: 350, y: 350, type: "rejected" }
             ],
             transitions: [
-                { id: "t1", from: "Initial", to: "ProcessingA", label: "Input A / Push", trigger: "a", action: "push" },
-                { id: "t2", from: "ProcessingA", to: "ProcessingA", label: "Input A / Push", trigger: "a", action: "push", selfLoop: true, direction: "top" },
-                { id: "t3", from: "ProcessingA", to: "ProcessingB", label: "Input B / Pop", trigger: "b", action: "pop" },
-                { id: "t4", from: "ProcessingB", to: "ProcessingB", label: "Input B / Pop [Stack > 0]", trigger: "b", action: "pop", condition: "stackNotEmpty", selfLoop: true, direction: "top" },
-                { id: "t5", from: "ProcessingB", to: "Accepted", label: "Input B / Accept [Stack = 0]", trigger: "b", action: "accept", condition: "stackEmpty" },
-                { id: "t6", from: "ProcessingB", to: "Rejected", label: "Input A", trigger: "a", action: "reject" }
+                { id: "t1", from: "Initial", to: "ProcessingA", label: "a/ε/X", trigger: "a", action: "push" },
+                { id: "t2", from: "ProcessingA", to: "ProcessingA", label: "a/ε/X", trigger: "a", action: "push", selfLoop: true, direction: "top" },
+                { id: "t3", from: "ProcessingA", to: "ProcessingB", label: "b/X/ε", trigger: "b", action: "pop" },
+                { id: "t4", from: "ProcessingB", to: "ProcessingB", label: "b/X/ε", trigger: "b", action: "pop", condition: "stackNotEmpty", selfLoop: true, direction: "top" },
+                { id: "t5", from: "ProcessingB", to: "Accepted", label: "b/X/ε [Stack = 0]", trigger: "b", action: "accept", condition: "stackEmpty" },
+                { id: "t6", from: "ProcessingB", to: "Rejected", label: "a/ε/ε", trigger: "a", action: "reject" }
             ],
             initialState: "Initial"
         };
@@ -539,10 +539,13 @@
                 ? simulationState.inputString[simulationState.position] 
                 : null;
             
-            // If no more input and not in an accepting state, reject
+            // If no more input, check if we're in a final state or can reach one
             if (currentSymbol === null) {
-                if (simulationState.currentState === 'Accepted') {
+                // Check if we're in the Accepted state or reached the end with an empty stack
+                if (simulationState.currentState === 'Accepted' || 
+                    (simulationState.currentState === 'ProcessingB' && simulationState.stack.length === 0)) {
                     simulationState.result = 'accepted';
+                    simulationState.currentState = 'Accepted'; // Move to accepted state
                 } else {
                     simulationState.result = 'rejected';
                 }
@@ -597,10 +600,10 @@
                 }
             } else if (transition.action === 'accept') {
                 simulationState.result = 'accepted';
-                simulationState.ended = transition.to === 'Accepted';
+                simulationState.ended = true;
             } else if (transition.action === 'reject') {
                 simulationState.result = 'rejected';
-                simulationState.ended = transition.to === 'Rejected';
+                simulationState.ended = true;
             }
             
             // Highlight active transition
@@ -612,6 +615,15 @@
             
             // Move to next input symbol
             simulationState.position++;
+            
+            // If we're in the ProcessingB state with an empty stack and at the end of input, accept
+            if (simulationState.position === simulationState.inputString.length && 
+                simulationState.currentState === 'ProcessingB' && 
+                simulationState.stack.length === 0) {
+                simulationState.result = 'accepted';
+                simulationState.currentState = 'Accepted'; // Move to accepted state
+                simulationState.ended = true;
+            }
             
             // Update visualization
             updateVisualization();

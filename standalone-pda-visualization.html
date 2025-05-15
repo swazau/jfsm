@@ -69,6 +69,17 @@
             max-width: 700px;
             line-height: 1.6;
         }
+        .legend {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .legend-item {
+            margin-bottom: 5px;
+        }
+        .legend-symbol {
+            font-style: italic;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -79,6 +90,14 @@
         strings with equal numbers of 'a's followed by an equal number of 'b's.</p>
         <p>The automaton uses a stack to keep track of the number of 'a's seen before starting to read 'b's, 
         and then pops one element for each 'b' encountered. If the stack empties exactly when the input is consumed, the string is accepted.</p>
+    </div>
+    
+    <div class="legend">
+        <p>Transition label format: <span class="legend-symbol">input/pop/push</span></p>
+        <div class="legend-item">• <span class="legend-symbol">a</span> - Input symbol 'a'</div>
+        <div class="legend-item">• <span class="legend-symbol">b</span> - Input symbol 'b'</div>
+        <div class="legend-item">• <span class="legend-symbol">X</span> - Stack symbol</div>
+        <div class="legend-item">• <span class="legend-symbol">ε</span> - Empty string (no operation)</div>
     </div>
 
     <script>
@@ -94,12 +113,12 @@
                 { name: "Rejected", x: 350, y: 350, type: "rejected" }
             ],
             transitions: [
-                { from: "Initial", to: "ProcessingA", label: "Input A / Push" },
-                { from: "ProcessingA", to: "ProcessingA", label: "Input A / Push", selfLoop: true, direction: "top" },
-                { from: "ProcessingA", to: "ProcessingB", label: "Input B / Pop" },
-                { from: "ProcessingB", to: "ProcessingB", label: "Input B / Pop [Stack > 0]", selfLoop: true, direction: "top" },
-                { from: "ProcessingB", to: "Accepted", label: "Input B / Accept [Stack = 0]" },
-                { from: "ProcessingB", to: "Rejected", label: "Input A" }
+                { from: "Initial", to: "ProcessingA", label: "a/ε/X" },
+                { from: "ProcessingA", to: "ProcessingA", label: "a/ε/X", selfLoop: true, direction: "top" },
+                { from: "ProcessingA", to: "ProcessingB", label: "b/X/ε" },
+                { from: "ProcessingB", to: "ProcessingB", label: "b/X/ε", selfLoop: true, direction: "top" },
+                { from: "ProcessingB", to: "Accepted", label: "b/X/ε [Stack = 0]" },
+                { from: "ProcessingB", to: "Rejected", label: "a/ε/ε" }
             ],
             initialState: "Initial"
         };
