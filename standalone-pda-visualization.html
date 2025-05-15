@@ -24,10 +24,11 @@
             fill: #ffe0e0;
             stroke: #e74c3c;
         }
-        .node text {
+        .node-text {
             font-size: 14px;
             text-anchor: middle;
-            dominant-baseline: middle;
+            alignment-baseline: middle; /* Critical for vertical centering */
+            dominant-baseline: middle; /* Additional support for vertical centering */
             pointer-events: none;
             font-weight: bold;
         }
@@ -39,6 +40,7 @@
         .link-label {
             font-size: 12px;
             text-anchor: middle;
+            alignment-baseline: middle;
             dominant-baseline: middle;
             pointer-events: none;
         }
@@ -46,7 +48,7 @@
             fill: white;
             rx: 5;
             ry: 5;
-            opacity: 0.9;
+            opacity: 0.95;
             stroke: #ddd;
             stroke-width: 1;
         }
@@ -55,6 +57,7 @@
             border: 1px solid #ddd;
             background-color: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 5px;
         }
         h1 {
             font-size: 28px;
@@ -257,7 +260,7 @@
         });
 
         // Draw nodes
-        const nodes = svg.selectAll(".node")
+        const nodes = svg.selectAll(".node-group")
             .data(fsm.states)
             .enter()
             .append("g")
@@ -273,9 +276,11 @@
             })
             .attr("r", nodeRadius);
 
+        // Properly centered text
         nodes.append("text")
-            .text(d => d.name)
-            .attr("dy", 1); // Small vertical adjustment for better centering
+            .attr("class", "node-text")
+            .attr("dy", "0.35em") // Fine-tune vertical centering
+            .text(d => d.name);
 
         // Add initial state marker (arrow pointing to initial state)
         const initialState = nodeMap[fsm.initialState];

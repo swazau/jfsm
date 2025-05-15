@@ -39,6 +39,7 @@
             font-size: 14px;
             text-anchor: middle;
             dominant-baseline: middle;
+            alignment-baseline: middle; /* Added for better vertical centering */
             pointer-events: none;
             font-weight: bold;
         }
@@ -435,7 +436,7 @@
 
         nodes.append("text")
             .text(d => d.name)
-            .attr("dy", 1); // Small vertical adjustment for better centering
+            .attr("dy", "0.35em"); // Fine-tune vertical centering
 
         // Add initial state marker (arrow pointing to initial state)
         const initialState = nodeMap[fsm.initialState];
