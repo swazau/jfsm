@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Push-Down Automaton Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .node {
+            fill: #fff;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+        .node.initial {
+            fill: #f0f8ff;
+        }
+        .node text {
+            font-size: 14px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        .link {
+            fill: none;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+        .link-label {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            background-color: white;
+            pointer-events: none;
+        }
+        .link-label-bg {
+            fill: white;
+            rx: 5;
+            ry: 5;
+            opacity: 0.85;
+        }
+        #automaton {
+            margin: 20px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        .description {
+            margin-top: 20px;
+            max-width: 700px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Push-Down Automaton Visualization</h1>
+    <div id="automaton"></div>
+    <div class="description">
+        <p>This Push-Down Automaton recognizes the language L = {a<sup>n</sup>b<sup>n</sup> | n ≥ 1}, which represents 
+        strings with equal numbers of 'a's followed by an equal number of 'b's.</p>
+        <p>The automaton uses a stack to keep track of the number of 'a's seen before starting to read 'b's, 
+        and then pops one element for each 'b' encountered. If the stack empties exactly when the input is consumed, the string is accepted.</p>
+    </div>
+
+    <script>
+        // Define the FSM
+        const fsm = {
+            name: "PushdownAutomaton",
+            model: "uml",
+            states: [
+                { name: "Initial", x: 120, y: 180 },
+                { name: "ProcessingA", x: 350, y: 180 },
+                { name: "ProcessingB", x: 580, y: 180 },
+                { name: "Accepted", x: 580, y: 350 },
+                { name: "Rejected", x: 350, y: 350 }
+            ],
+            transitions: [
+                { from: "Initial", to: "ProcessingA", label: "Input A / Push" },
+                { from: "ProcessingA", to: "ProcessingA", label: "Input A / Push", selfLoop: true, direction: "top" },
+                { from: "ProcessingA", to: "ProcessingB", label: "Input B / Pop" },
+                { from: "ProcessingB", to: "ProcessingB", label: "Input B / Pop [Stack > 0]", selfLoop: true, direction: "top" },
+                { from: "ProcessingB", to: "Accepted", label: "Input B / Accept [Stack = 0]" },
+                { from: "ProcessingB", to: "Rejected", label: "Input A" }
+            ],
+            initialState: "Initial"
+        };
+
+        // Setup the SVG
+        const width = 750;
+        const height = 400;
+        const svg = d3.select("#automaton")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Define node properties
+        const nodeRadius = 40;
+
+        // Create a map to reference nodes by name
+        const nodeMap = {};
+        fsm.states.forEach(state => {
+            nodeMap[state.name] = state;
+        });
+
+        // Create curved paths for transitions
+        function createPath(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop
+                const direction = transition.direction || "top";
+                let cx, cy, rx, ry;
+                
+                if (direction === "top") {
+                    cx = source.x;
+                    cy = source.y - 70;
+                    rx = 40;
+                    ry = 30;
+                } else if (direction === "right") {
+                    cx = source.x + 70;
+                    cy = source.y;
+                    rx = 30;
+                    ry = 40;
+                }
+                
+                return `M ${source.x} ${source.y - nodeRadius} 
+                        C ${source.x - 60} ${source.y - 100},
+                          ${source.x + 60} ${source.y - 100},
+                          ${source.x} ${source.y - nodeRadius}`;
+            } else {
+                // For transitions that aren't straight horizontal or vertical
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const angle = Math.atan2(dy, dx);
+                
+                const startX = source.x + nodeRadius * Math.cos(angle);
+                const startY = source.y + nodeRadius * Math.sin(angle);
+                const endX = target.x - nodeRadius * Math.cos(angle);
+                const endY = target.y - nodeRadius * Math.sin(angle);
+                
+                // Calculate control point for slight curve
+                const midX = (source.x + target.x) / 2;
+                const midY = (source.y + target.y) / 2;
+                const offsetX = -dy * 0.2; // Perpendicular offset
+                const offsetY = dx * 0.2;  // Perpendicular offset
+                
+                return `M ${startX} ${startY} 
+                        Q ${midX + offsetX} ${midY + offsetY} 
+                        ${endX} ${endY}`;
+            }
+        }
+
+        // Get position for transition label
+        function getLabelPosition(source, target, transition) {
+            if (source.name === target.name) {
+                // Self-loop label
+                const direction = transition.direction || "top";
+                if (direction === "top") {
+                    return { x: source.x, y: source.y - 80 };
+                } else if (direction === "right") {
+                    return { x: source.x + 80, y: source.y };
+                }
+            } else {
+                // Regular transition label
+                const dx = target.x - source.x;
+                const dy = target.y - source.y;
+                const distance = Math.sqrt(dx*dx + dy*dy);
+                
+                const midX = (source.x + target.x) / 2;
+                const midY = (source.y + target.y) / 2;
+                
+                // Add offset perpendicular to the line
+                const angle = Math.atan2(dy, dx);
+                const perpAngle = angle + Math.PI/2;
+                const offsetAmount = 20; // Adjust this value to move labels further from lines
+                
+                return {
+                    x: midX + offsetAmount * Math.cos(perpAngle),
+                    y: midY + offsetAmount * Math.sin(perpAngle)
+                };
+            }
+        }
+
+        // Get dimensions for label background
+        function getLabelBBox(label, position) {
+            // Approximate the text dimensions
+            const padding = 5;
+            const width = label.length * 7 + padding * 2; // Rough estimate: 7px per character
+            const height = 20 + padding * 2;
+            
+            return {
+                x: position.x - width/2,
+                y: position.y - height/2,
+                width: width,
+                height: height
+            };
+        }
+
+        // Add arrowhead marker
+        svg.append("defs").append("marker")
+            .attr("id", "arrowhead")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 8)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#333");
+
+        // Draw transitions
+        svg.selectAll(".link")
+            .data(fsm.transitions)
+            .enter()
+            .append("path")
+            .attr("class", "link")
+            .attr("d", d => createPath(nodeMap[d.from], nodeMap[d.to], d))
+            .attr("marker-end", "url(#arrowhead)");
+
+        // Draw label backgrounds and labels
+        fsm.transitions.forEach(transition => {
+            const source = nodeMap[transition.from];
+            const target = nodeMap[transition.to];
+            const labelPos = getLabelPosition(source, target, transition);
+            const bbox = getLabelBBox(transition.label, labelPos);
+            
+            // Label background
+            svg.append("rect")
+                .attr("class", "link-label-bg")
+                .attr("x", bbox.x)
+                .attr("y", bbox.y)
+                .attr("width", bbox.width)
+                .attr("height", bbox.height)
+                .attr("rx", 5)
+                .attr("ry", 5);
+            
+            // Label text
+            svg.append("text")
+                .attr("class", "link-label")
+                .attr("x", labelPos.x)
+                .attr("y", labelPos.y)
+                .text(transition.label);
+        });
+
+        // Draw nodes
+        const nodes = svg.selectAll(".node")
+            .data(fsm.states)
+            .enter()
+            .append("g")
+            .attr("transform", d => `translate(${d.x}, ${d.y})`);
+
+        nodes.append("circle")
+            .attr("class", d => `node ${d.name === fsm.initialState ? "initial" : ""}`)
+            .attr("r", nodeRadius);
+
+        nodes.append("text")
+            .text(d => d.name);
+
+        // Add initial state marker
+        const initialState = nodeMap[fsm.initialState];
+        svg.append("path")
+            .attr("d", `M ${initialState.x - 90} ${initialState.y} L ${initialState.x - nodeRadius - 5} ${initialState.y}`)
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5)
+            .attr("marker-end", "url(#arrowhead)");
+    </script>
+</body>
+</html>

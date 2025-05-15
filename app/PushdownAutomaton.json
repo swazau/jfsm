@@ -1,0 +1,156 @@
+{
+  "name": "PushdownAutomaton",
+  "model": "uml",
+  "events": [
+    {
+      "name": "InputA",
+      "type": "input"
+    },
+    {
+      "name": "InputB",
+      "type": "input"
+    },
+    {
+      "name": "Push",
+      "type": "output"
+    },
+    {
+      "name": "Pop",
+      "type": "output"
+    },
+    {
+      "name": "Accept",
+      "type": "output"
+    }
+  ],
+  "data": [
+    {
+      "name": "stack",
+      "type": "int[100]" 
+    },
+    {
+      "name": "stackPointer",
+      "type": "int"
+    }
+  ],
+  "states": [
+    {
+      "name": "Initial",
+      "events": {
+        "onEntry": true
+      },
+      "position": { "x": 100, "y": 180 },
+      "size": { "width": 100, "height": 60 }
+    },
+    {
+      "name": "ProcessingA",
+      "events": {
+        "onEntry": true
+      },
+      "position": { "x": 350, "y": 180 },
+      "size": { "width": 120, "height": 60 }
+    },
+    {
+      "name": "ProcessingB",
+      "events": {
+        "onEntry": true
+      },
+      "position": { "x": 600, "y": 180 },
+      "size": { "width": 120, "height": 60 }
+    },
+    {
+      "name": "Accepted",
+      "events": {
+        "onEntry": true
+      },
+      "position": { "x": 600, "y": 350 },
+      "size": { "width": 100, "height": 60 }
+    },
+    {
+      "name": "Rejected",
+      "events": {
+        "onEntry": true
+      },
+      "position": { "x": 350, "y": 350 },
+      "size": { "width": 100, "height": 60 }
+    }
+  ],
+  "transitions": [
+    {
+      "name": "StartWithA",
+      "from": "Initial",
+      "to": "ProcessingA",
+      "trigger": "InputA",
+      "output": "Push",
+      "onTransition": true,
+      "vertices": []
+    },
+    {
+      "name": "ContinueA",
+      "from": "ProcessingA",
+      "to": "ProcessingA",
+      "trigger": "InputA",
+      "output": "Push",
+      "onTransition": true,
+      "vertices": [
+        { "x": 350, "y": 100 },
+        { "x": 280, "y": 100 },
+        { "x": 280, "y": 180 }
+      ]
+    },
+    {
+      "name": "StartProcessingB",
+      "from": "ProcessingA",
+      "to": "ProcessingB",
+      "trigger": "InputB",
+      "output": "Pop",
+      "onTransition": true,
+      "vertices": []
+    },
+    {
+      "name": "ContinueB",
+      "from": "ProcessingB",
+      "to": "ProcessingB",
+      "trigger": "InputB",
+      "guard": "stackPointer > 0",
+      "to": {
+        "onTrue": "ProcessingB",
+        "onFalse": "Rejected"
+      },
+      "output": "Pop",
+      "onTransition": true,
+      "onTrue": true,
+      "onFalse": true,
+      "vertices": [
+        { "x": 670, "y": 100 },
+        { "x": 600, "y": 100 }
+      ]
+    },
+    {
+      "name": "AcceptState",
+      "from": "ProcessingB",
+      "trigger": "InputB",
+      "guard": "stackPointer == 0",
+      "to": {
+        "onTrue": "Accepted",
+        "onFalse": "ProcessingB"
+      },
+      "output": "Accept",
+      "onTransition": true,
+      "onTrue": true,
+      "onFalse": true,
+      "vertices": []
+    },
+    {
+      "name": "RejectState",
+      "from": "ProcessingB",
+      "to": "Rejected",
+      "trigger": "InputA",
+      "onTransition": true,
+      "vertices": [
+        { "x": 480, "y": 280 }
+      ]
+    }
+  ],
+  "initialState": "Initial"
+}
